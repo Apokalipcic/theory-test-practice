@@ -112,15 +112,30 @@ window.Store = (function () {
 
   // The failed bank: anything answered wrong at least once that hasn't since
   // been answered correctly MASTERY times in a row.
+  // Ids are kept as strings - the current source uses ids like "ABMW0425RU19".
   function failedIds() {
     var d = data();
     if (!d) return [];
-    return Object.keys(d.answers)
-      .filter(function (id) {
-        var r = d.answers[id];
-        return r.w > 0 && r.streak < MASTERY;
-      })
-      .map(Number);
+    return Object.keys(d.answers).filter(function (id) {
+      var r = d.answers[id];
+      return r.w > 0 && r.streak < MASTERY;
+    });
+  }
+
+  // Drops progress for questions that no longer exist. Without this, swapping
+  // the question set leaves orphaned answers that inflate the stats and put
+  // unresolvable ids into the failed bank.
+  function prune(validIds) {
+    var d = data();
+    if (!d) return 0;
+    var valid = {};
+    validIds.forEach(function (id) { valid[id] = true; });
+    var removed = 0;
+    Object.keys(d.answers).forEach(function (id) {
+      if (!valid[id]) { delete d.answers[id]; removed++; }
+    });
+    if (removed) save(d);
+    return removed;
   }
 
   function recordExam(result) {
@@ -190,6 +205,7 @@ window.Store = (function () {
     setCurrent: setCurrent,
     recordAnswer: recordAnswer,
     failedIds: failedIds,
+    prune: prune,
     recordExam: recordExam,
     summary: summary,
     getPref: getPref,

@@ -41,6 +41,9 @@
     var list = byId('profile-list');
     clear(list);
 
+    // Kept in sync with the data rather than hardcoded in the markup.
+    byId('question-count').textContent = window.QUESTIONS.length;
+
     Store.listProfiles().forEach(function (name) {
       var row = document.createElement('div');
       row.className = 'profile-row';
@@ -233,7 +236,14 @@
         alert('Your failed bank is empty. Answer some questions first — anything you get wrong lands here.');
         return;
       }
-      queue = shuffle(ids).map(function (id) { return questionsById[id]; });
+      // Defensive: ignore ids from a question set this build no longer has.
+      queue = shuffle(ids)
+        .map(function (id) { return questionsById[id]; })
+        .filter(Boolean);
+      if (!queue.length) {
+        alert('Your failed bank refers to questions that are no longer in this app.');
+        return;
+      }
     } else if (mode === 'exam') {
       queue = shuffle(window.QUESTIONS).slice(0, EXAM_SIZE);
     } else {
@@ -483,5 +493,12 @@
 
   var name = Store.currentName();
   var known = Store.listProfiles().indexOf(name) !== -1;
-  if (name && known) renderHome(); else renderProfiles();
+  if (name && known) {
+    // The question set has been replaced once already; clear out progress that
+    // refers to questions no longer present before showing any stats.
+    Store.prune(Object.keys(questionsById));
+    renderHome();
+  } else {
+    renderProfiles();
+  }
 })();

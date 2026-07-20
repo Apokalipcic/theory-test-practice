@@ -1,76 +1,107 @@
-// One-off build: downloads question images locally and normalizes data.json
-// into js/questions.js. Re-run only if you refresh data.json upstream.
+// One-off build: normalizes the source question set into js/questions.js and
+// downloads the matching images into img/. Re-run if you refresh the source.
+//
+// Source: github.com/abdullahzia-6464/DTT-Practice-App (captured Oct 2025).
+// Images live in that repo's images/ directory, named <question index>.png.
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const raw = JSON.parse(fs.readFileSync(path.join(__dirname, 'data.json'), 'utf8'));
+const SRC_REPO = 'abdullahzia-6464/DTT-Practice-App';
+const SRC_BRANCH = 'main';
+
+const raw = JSON.parse(fs.readFileSync(path.join(__dirname, 'dtt-2025.json'), 'utf8'));
+const questions = raw['ddt-questions'].state.allQuestions;
+
 const imgDir = path.join(__dirname, 'img');
 fs.mkdirSync(imgDir, { recursive: true });
 
-function download(url, dest) {
+function get(url, asJson) {
   return new Promise((resolve, reject) => {
-    // Upstream URLs are http://; the CDN serves the same paths over https.
-    const secure = url.replace(/^http:/, 'https:');
-    https.get(secure, res => {
+    https.get(url, { headers: { 'User-Agent': 'theory-test-build' } }, res => {
       if (res.statusCode !== 200) {
         res.resume();
-        return reject(new Error(`${res.statusCode} for ${secure}`));
+        return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
       }
-      // Write to a temp file and rename on completion, so an interrupted run
-      // can never leave a truncated image that later looks "already downloaded".
-      const tmp = dest + '.part';
-      const file = fs.createWriteStream(tmp);
-      res.pipe(file);
-      file.on('finish', () => file.close(() => {
-        fs.renameSync(tmp, dest);
-        resolve();
-      }));
-      file.on('error', reject);
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        resolve(asJson ? JSON.parse(buf.toString('utf8')) : buf);
+      });
     }).on('error', reject);
   });
 }
 
-(async () => {
-  const seen = new Map();
-  const failures = [];
+async function download(url, dest) {
+  const buf = await get(url, false);
+  // Write to a temp file and rename on completion, so an interrupted run can
+  // never leave a truncated image that later looks "already downloaded".
+  const tmp = dest + '.part';
+  fs.writeFileSync(tmp, buf);
+  fs.renameSync(tmp, dest);
+}
 
-  for (const q of raw) {
-    if (!q.image || seen.has(q.image)) continue;
-    const name = path.basename(new URL(q.image.replace(/^http:/, 'https:')).pathname);
-    seen.set(q.image, name);
-    const dest = path.join(imgDir, name);
+(async () => {
+  // Ask the source repo which images actually exist rather than probing 1..805.
+  const listing = await get(
+    `https://api.github.com/repos/${SRC_REPO}/contents/images?ref=${SRC_BRANCH}`, true);
+  const available = new Set(
+    listing.filter(f => f.type === 'file' && f.name.endsWith('.png'))
+           .map(f => parseInt(f.name, 10)));
+
+  const failures = [];
+  for (const idx of available) {
+    const dest = path.join(imgDir, idx + '.png');
     if (fs.existsSync(dest) && fs.statSync(dest).size > 0) continue;
     try {
-      await download(q.image, dest);
+      await download(
+        `https://raw.githubusercontent.com/${SRC_REPO}/${SRC_BRANCH}/images/${idx}.png`, dest);
     } catch (err) {
-      failures.push(`${q.image} -> ${err.message}`);
+      failures.push(`${idx}.png -> ${err.message}`);
     }
   }
 
-  const questions = raw.map(q => ({
+  const out = questions.map(q => ({
     id: q.id,
-    q: q.question.trim(),
-    heading: q.heading,
-    // Upstream prefixes most explanations with a misspelled "Explantion:" label.
-    explanation: q.explanation.replace(/^Explan[a-z]*ion:\s*/i, '').trim(),
-    image: q.image ? 'img/' + seen.get(q.image) : null,
-    options: q.questions,
-    // Store the index so a profile's saved answers survive option reordering.
-    answer: q.questions.indexOf(q.answer),
+    q: String(q.question).trim(),
+    heading: q.section,
+    explanation: String(q.explanation || '').trim(),
+    image: available.has(q.index) ? 'img/' + q.index + '.png' : null,
+    options: q.options,
+    // Already an index into options in this source; keep it that way.
+    answer: q.correct_answer,
   }));
 
-  const bad = questions.filter(q => q.answer < 0);
-  if (bad.length) throw new Error(`${bad.length} questions have no matching answer`);
+  // Guard the invariants the app relies on.
+  const problems = [];
+  const ids = new Set();
+  out.forEach(q => {
+    if (ids.has(q.id)) problems.push(`duplicate id ${q.id}`);
+    ids.add(q.id);
+    if (!Array.isArray(q.options) || q.options.length < 2) problems.push(`bad options for ${q.id}`);
+    if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.options.length) {
+      problems.push(`answer out of range for ${q.id}`);
+    }
+    if (!q.q) problems.push(`empty question text for ${q.id}`);
+  });
+  if (problems.length) throw new Error('Source data failed validation:\n  ' + problems.join('\n  '));
 
   fs.writeFileSync(
     path.join(__dirname, 'js', 'questions.js'),
     '// Generated by build.js - do not edit by hand.\n' +
-    'window.QUESTIONS = ' + JSON.stringify(questions) + ';\n'
+    'window.QUESTIONS = ' + JSON.stringify(out) + ';\n'
   );
 
-  console.log(`images: ${seen.size} referenced, ${fs.readdirSync(imgDir).length} on disk`);
-  console.log(`questions: ${questions.length}`);
+  const bytes = fs.readdirSync(imgDir)
+    .reduce((s, f) => s + fs.statSync(path.join(imgDir, f)).size, 0);
+  console.log(`questions: ${out.length} (${out.filter(q => q.image).length} with an image)`);
+  console.log(`images: ${available.size} referenced, ${fs.readdirSync(imgDir).length} on disk, ` +
+              `${(bytes / 1048576).toFixed(1)}MB`);
+  const sections = {};
+  out.forEach(q => { sections[q.heading] = (sections[q.heading] || 0) + 1; });
+  Object.entries(sections).sort((a, b) => b[1] - a[1])
+    .forEach(([k, v]) => console.log(`  ${String(v).padStart(3)} | ${k}`));
   if (failures.length) {
     console.log(`FAILED (${failures.length}):`);
     failures.forEach(f => console.log('  ' + f));
