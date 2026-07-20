@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Theory Test Practice</title>
+  <!-- Inline so the app stays self-contained and the console stays clean. -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23c22f3d'/><rect x='7' y='13' width='18' height='6' rx='1' fill='%23fff'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Profile picker -->
+<section id="screen-profiles" class="screen">
+  <div class="wrap narrow">
+    <h1>Theory Test</h1>
+    <p class="sub">Irish driver theory practice &middot; 890 questions</p>
+
+    <div id="profile-list" class="stack"></div>
+
+    <form id="new-profile" class="row" autocomplete="off">
+      <input id="new-profile-name" type="text" placeholder="New name" maxlength="30" aria-label="New profile name">
+      <button type="submit" class="btn">Add</button>
+    </form>
+    <p id="profile-error" class="error" hidden></p>
+
+    <p class="note">
+      Progress is saved in this browser only &mdash; there is no password and no server.
+      Use <b>Export</b> from the menu to back it up or move it to another device.
+    </p>
+    <p class="note"><button id="import-btn" class="link">Import a progress file</button></p>
+    <input id="import-file" type="file" accept="application/json,.json" hidden>
+    <p id="storage-warning" class="error" hidden>
+      This browser is blocking storage (private mode?), so progress will not be saved.
+    </p>
+  </div>
+</section>
+
+<!-- Home / menu -->
+<section id="screen-home" class="screen" hidden>
+  <div class="wrap narrow">
+    <header class="topbar">
+      <span class="who">Hi, <b id="who-name"></b></span>
+      <button id="switch-profile" class="link">Switch</button>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="stack">
+      <button class="card" data-mode="practice">
+        <span class="card-title">Practice</span>
+        <span class="card-sub">Pick how many questions you want. Instant feedback and explanations.</span>
+      </button>
+      <button class="card" data-mode="failed">
+        <span class="card-title">Failed bank <span id="failed-count" class="pill">0</span></span>
+        <span class="card-sub">Drill only what you got wrong. A question leaves the bank after 2 correct answers in a row.</span>
+      </button>
+      <button class="card" data-mode="exam">
+        <span class="card-title">Mock exam</span>
+        <span class="card-sub">40 questions, 45 minutes, pass mark 35. No feedback until the end.</span>
+      </button>
+    </div>
+
+    <div id="exam-history"></div>
+
+    <p class="note">
+      <button id="export-btn" class="link">Export progress</button> &middot;
+      <button id="delete-btn" class="link danger">Delete this profile</button>
+    </p>
+  </div>
+</section>
+
+<!-- Setup: question count for practice, feedback toggle for the exam -->
+<section id="screen-setup" class="screen" hidden>
+  <div class="wrap narrow">
+    <header class="topbar">
+      <button id="setup-back" class="link">&larr; Back</button>
+    </header>
+
+    <h1 id="setup-title"></h1>
+    <p id="setup-sub" class="sub"></p>
+
+    <div id="setup-length" hidden>
+      <p class="label">How many questions?</p>
+      <div id="length-chips" class="chips"></div>
+    </div>
+
+    <label id="setup-feedback" class="check" hidden>
+      <input type="checkbox" id="exam-feedback">
+      <span class="check-text">
+        <b>Show the answer after each question</b>
+        <span class="check-sub">Marks your choice right or wrong straight away and shows the
+        explanation. Your score is still only revealed at the end. Off by default, which
+        matches the real test.</span>
+      </span>
+    </label>
+
+    <button id="setup-start" class="btn primary wide">Start</button>
+  </div>
+</section>
+
+<!-- Quiz (practice, failed drill and exam all use this) -->
+<section id="screen-quiz" class="screen" hidden>
+  <div class="wrap">
+    <header class="topbar">
+      <button id="quit" class="link">&larr; Back</button>
+      <span id="progress-label" class="muted"></span>
+      <span id="timer" class="timer" hidden></span>
+    </header>
+
+    <div class="progressbar"><div id="progressfill"></div></div>
+
+    <article class="question">
+      <p id="q-heading" class="muted small"></p>
+      <h2 id="q-text"></h2>
+      <img id="q-image" alt="Road sign for this question" hidden>
+      <div id="q-options" class="stack"></div>
+      <div id="q-feedback" class="feedback" hidden>
+        <p id="q-verdict" class="verdict"></p>
+        <p id="q-explanation"></p>
+      </div>
+      <button id="next" class="btn primary" hidden>Next</button>
+    </article>
+  </div>
+</section>
+
+<!-- Exam result -->
+<section id="screen-result" class="screen" hidden>
+  <div class="wrap narrow">
+    <h1 id="result-title"></h1>
+    <p id="result-score" class="bigscore"></p>
+    <p id="result-detail" class="sub"></p>
+    <div class="stack">
+      <button id="review-wrong" class="btn">Review the ones I got wrong</button>
+      <button id="result-home" class="btn primary">Back to menu</button>
+    </div>
+  </div>
+</section>
+
+<script src="js/questions.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

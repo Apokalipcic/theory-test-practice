@@ -1,0 +1,11 @@
+# OS cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Nothing is built or installed here - the site is plain static files.
+node_modules/

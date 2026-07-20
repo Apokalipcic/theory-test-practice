@@ -1,0 +1,216 @@
+/* Mobile-first: this gets used on a phone more than a desktop. */
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #16191d;
+  --muted: #666e7a;
+  --line: #dde1e7;
+  --accent: #1a63d8;
+  --accent-text: #ffffff;
+  --good: #12805c;
+  --good-bg: #e6f5ef;
+  --bad: #c22f3d;
+  --bad-bg: #fdeaec;
+  --radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171b;
+    --panel: #1d2126;
+    --text: #e9edf2;
+    --muted: #9aa4b1;
+    --line: #2e343c;
+    --accent: #5b9bff;
+    --accent-text: #0d1116;
+    --good: #4ad3a0;
+    --good-bg: #14312a;
+    --bad: #ff8b96;
+    --bad-bg: #3a1d21;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* The app hides screens and controls with the `hidden` attribute. Any explicit
+   `display` below would otherwise beat the browser's [hidden] rule and leave
+   the element on screen, so make hiding win outright. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 56px; }
+.wrap.narrow { max-width: 520px; }
+
+h1 { font-size: 1.6rem; margin: 8px 0 4px; }
+h2 { font-size: 1.25rem; margin: 4px 0 16px; line-height: 1.35; }
+.sub { color: var(--muted); margin-top: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.note { color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+.error { color: var(--bad); font-size: 0.9rem; }
+
+.stack { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.row { display: flex; gap: 8px; margin: 16px 0; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px; min-height: 32px;
+}
+
+input[type="text"] {
+  flex: 1; min-width: 0;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.btn {
+  padding: 12px 18px;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+
+.link {
+  background: none; border: 0; padding: 0;
+  font: inherit; color: var(--accent);
+  cursor: pointer; text-decoration: underline;
+}
+.link.danger { color: var(--bad); }
+
+/* Menu cards */
+.card {
+  display: block; width: 100%; text-align: left;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer; font: inherit; color: inherit;
+}
+.card:hover { border-color: var(--accent); }
+.card-title { display: block; font-weight: 600; font-size: 1.05rem; }
+.card-sub { display: block; color: var(--muted); font-size: 0.87rem; margin-top: 4px; }
+
+.pill {
+  display: inline-block; min-width: 22px; padding: 1px 8px;
+  margin-left: 6px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-text);
+  font-size: 0.8rem; font-weight: 600; text-align: center;
+}
+.pill.zero { background: var(--line); color: var(--muted); }
+
+/* Setup screen */
+.label { font-weight: 600; font-size: 0.9rem; margin: 20px 0 8px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 10px 18px;
+  font: inherit; color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.on {
+  background: var(--accent); color: var(--accent-text);
+  border-color: var(--accent); font-weight: 600;
+}
+
+.check {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.check:hover { border-color: var(--accent); }
+.check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+.check-text { display: block; }
+.check-sub { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+.btn.wide { width: 100%; margin-top: 8px; }
+
+/* Profile rows */
+.profile-row { display: flex; gap: 8px; align-items: center; }
+.profile-row .btn { flex: 1; text-align: left; }
+
+/* Stats strip */
+.stats { display: flex; gap: 10px; margin: 16px 0; }
+.stat {
+  flex: 1; padding: 12px; text-align: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.stat b { display: block; font-size: 1.35rem; }
+.stat span { color: var(--muted); font-size: 0.78rem; }
+
+/* Quiz */
+.progressbar { height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; margin-bottom: 20px; }
+#progressfill { height: 100%; width: 0; background: var(--accent); transition: width 0.25s ease; }
+
+.question { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+
+#q-image {
+  display: block; max-width: 260px; width: 100%; height: auto;
+  margin: 0 0 18px; border-radius: 8px; background: #fff;
+}
+
+/* Answer buttons: big tap targets, and they must stay readable once marked. */
+.option {
+  display: block; width: 100%; text-align: left;
+  padding: 14px 16px;
+  font: inherit; color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.option:hover:not(:disabled) { border-color: var(--accent); }
+.option:disabled { cursor: default; }
+.option.chosen { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.option.correct { background: var(--good-bg); border-color: var(--good); color: var(--text); }
+.option.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--text); }
+.option .mark { float: right; font-weight: 700; margin-left: 10px; }
+.option.correct .mark { color: var(--good); }
+.option.wrong .mark { color: var(--bad); }
+
+.feedback { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.verdict { font-weight: 600; margin: 0 0 6px; }
+.verdict.good { color: var(--good); }
+.verdict.bad { color: var(--bad); }
+
+#next { margin-top: 18px; width: 100%; }
+
+.timer { font-variant-numeric: tabular-nums; font-weight: 600; }
+.timer.low { color: var(--bad); }
+
+/* Result */
+.bigscore { font-size: 3rem; font-weight: 700; margin: 8px 0; }
+.bigscore.pass { color: var(--good); }
+.bigscore.fail { color: var(--bad); }
+
+.exam-log { margin-top: 24px; }
+.exam-log h3 { font-size: 0.9rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.exam-log li { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+.exam-log ul { list-style: none; margin: 0; padding: 0; }
+.exam-log .pass { color: var(--good); font-weight: 600; }
+.exam-log .fail { color: var(--bad); font-weight: 600; }
