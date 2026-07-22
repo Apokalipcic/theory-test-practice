@@ -144,6 +144,8 @@ input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-off
   cursor: pointer;
 }
 .check:hover { border-color: var(--accent); }
+.check.disabled { opacity: 0.55; cursor: default; }
+.check.disabled:hover { border-color: var(--line); }
 .check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
 .check-text { display: block; }
 .check-sub { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 4px; }

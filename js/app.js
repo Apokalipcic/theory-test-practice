@@ -35,6 +35,13 @@
 
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 
+  // Questions the current profile has never answered.
+  function unseenQuestions() {
+    var seen = {};
+    Store.seenIds().forEach(function (id) { seen[id] = true; });
+    return window.QUESTIONS.filter(function (q) { return !seen[q.id]; });
+  }
+
   /* ---------- profiles ---------- */
 
   function renderProfiles() {
@@ -192,10 +199,15 @@
       : EXAM_SIZE + ' questions, ' + EXAM_MINUTES + ' minutes, pass mark ' + EXAM_PASS + '.';
 
     byId('setup-length').hidden = !isPractice;
+    byId('setup-unseen').hidden = !isPractice;
     byId('setup-feedback').hidden = isPractice;
 
-    if (isPractice) renderLengthChips();
-    else byId('exam-feedback').checked = Store.getPref('examFeedback', false);
+    if (isPractice) {
+      renderLengthChips();
+      renderUnseenToggle();
+    } else {
+      byId('exam-feedback').checked = Store.getPref('examFeedback', false);
+    }
 
     show('screen-setup');
   }
@@ -218,11 +230,31 @@
     });
   }
 
+  function renderUnseenToggle() {
+    var box = byId('setup-unseen');
+    var check = byId('practice-unseen');
+    var left = unseenQuestions().length;
+
+    check.checked = Store.getPref('practiceUnseenOnly', false);
+    // Nothing new to draw from disables the option rather than starting an
+    // empty session; it re-enables itself once the set changes.
+    check.disabled = left === 0;
+    box.classList.toggle('disabled', left === 0);
+    if (left === 0) check.checked = false;
+
+    byId('practice-unseen-sub').textContent = left === 0
+      ? 'You have already seen every question at least once.'
+      : left + ' of ' + window.QUESTIONS.length + ' still unseen. ' +
+        'Fewer than your chosen count just gives you all that are left.';
+  }
+
   byId('setup-back').onclick = function () { pendingMode = null; renderHome(); };
 
   byId('setup-start').onclick = function () {
     if (pendingMode === 'exam') {
       Store.setPref('examFeedback', byId('exam-feedback').checked);
+    } else if (pendingMode === 'practice') {
+      Store.setPref('practiceUnseenOnly', byId('practice-unseen').checked);
     }
     start(pendingMode);
   };
@@ -248,7 +280,17 @@
       queue = shuffle(window.QUESTIONS).slice(0, EXAM_SIZE);
     } else {
       var size = Store.getPref('practiceSize', 20);
-      queue = shuffle(window.QUESTIONS);
+      var pool = window.QUESTIONS;
+      if (Store.getPref('practiceUnseenOnly', false)) {
+        pool = unseenQuestions();
+        if (!pool.length) {
+          alert('You have already seen every question at least once. Turn off ' +
+            '"only questions I haven\'t seen yet" to keep practising, or drill ' +
+            'the failed bank.');
+          return;
+        }
+      }
+      queue = shuffle(pool);
       if (size > 0) queue = queue.slice(0, size);
     }
 

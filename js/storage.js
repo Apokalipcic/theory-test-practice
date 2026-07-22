@@ -122,6 +122,14 @@ window.Store = (function () {
     });
   }
 
+  // Every question this profile has answered at least once. "Unseen" practice
+  // is the complement of this against the full question set.
+  function seenIds() {
+    var d = data();
+    if (!d) return [];
+    return Object.keys(d.answers);
+  }
+
   // Drops progress for questions that no longer exist. Without this, swapping
   // the question set leaves orphaned answers that inflate the stats and put
   // unresolvable ids into the failed bank.
@@ -205,6 +213,7 @@ window.Store = (function () {
     setCurrent: setCurrent,
     recordAnswer: recordAnswer,
     failedIds: failedIds,
+    seenIds: seenIds,
     prune: prune,
     recordExam: recordExam,
     summary: summary,
