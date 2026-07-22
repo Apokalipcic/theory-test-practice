@@ -35,21 +35,29 @@ Next; with it on, the question locks once answered.
 
 ## How progress is stored
 
-Progress lives in the browser's `localStorage`, one JSON blob per profile. There
-is deliberately **no password and no server**:
+Progress syncs across devices by nickname. Each profile is one JSON blob, held
+by a small Cloudflare Worker keyed on the nickname (`worker/worker.js`). Log in
+with the same nickname on your phone and your laptop and you see the same
+progress. `localStorage` is now only a **cache** — it keeps the app instant and
+lets it keep working through a dropped connection; the Worker is the source of
+truth. Changes are pushed to the Worker debounced, and flushed when the tab is
+hidden or closed.
 
-- Profiles are a convenience for sharing a device, *not* security. Anyone using
-  the browser can open any profile.
-- Progress does not sync between devices. Your phone and your laptop keep
-  separate records.
-- Clearing site data wipes it. Use **Export progress** to save a JSON backup,
-  and **Import** to restore it or move it to another device.
+There is deliberately **no password**:
 
-Importing never overwrites an existing profile — a name collision is renamed to
-`Name (2)`.
+- A nickname is a label, not a login. Anyone who knows a nickname can open and
+  overwrite it. Fine for a personal study tool; don't put anything private in it.
+- Offline, the app falls back to this device's cached copy. If you open a
+  nickname you've never used on this device *while* the server is unreachable,
+  login is refused rather than risk overwriting good server data with a blank.
+- **Export progress** still saves a JSON backup; **Import** loads one back in.
+- **Remove from this device** clears the nickname's local cache only; the server
+  copy survives, so logging in again anywhere brings it back.
 
-Every read and write goes through `js/storage.js`. If you ever want real accounts
-with cross-device sync, that one file is the thing to replace.
+Every read and write goes through `js/storage.js`, and every write reaches the
+Worker through the two endpoints in `worker/worker.js` (`GET /<nickname>` to
+load, `PUT /<nickname>` to save). The Worker URL is the one constant at the top
+of `js/storage.js`; change it there if you redeploy the Worker.
 
 ## Files
 
@@ -57,8 +65,9 @@ with cross-device sync, that one file is the thing to replace.
 index.html        markup for all four screens
 css/style.css     styling, light and dark
 js/questions.js   generated question data - do not edit by hand
-js/storage.js     profiles and progress; the only code touching localStorage
+js/storage.js     profiles and progress; syncs to the Worker, caches locally
 js/app.js         screens, quiz flow, exam timer and scoring
+worker/worker.js  Cloudflare Worker: the cross-device progress store
 img/              239 sign images, vendored from the source repo
 dtt-2025.json     upstream source data, input to build.js
 build.js          regenerates questions.js and re-downloads images

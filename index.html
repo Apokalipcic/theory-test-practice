@@ -19,19 +19,20 @@
     <div id="profile-list" class="stack"></div>
 
     <form id="new-profile" class="row" autocomplete="off">
-      <input id="new-profile-name" type="text" placeholder="New name" maxlength="30" aria-label="New profile name">
-      <button type="submit" class="btn">Add</button>
+      <input id="new-profile-name" type="text" placeholder="Your nickname" maxlength="30" aria-label="Nickname">
+      <button type="submit" class="btn">Log in</button>
     </form>
     <p id="profile-error" class="error" hidden></p>
 
     <p class="note">
-      Progress is saved in this browser only &mdash; there is no password and no server.
-      Use <b>Export</b> from the menu to back it up or move it to another device.
+      Type a nickname to pick up your progress on any device. There's no password
+      &mdash; anyone who knows a nickname can open it, so treat it as a label, not a login.
     </p>
     <p class="note"><button id="import-btn" class="link">Import a progress file</button></p>
     <input id="import-file" type="file" accept="application/json,.json" hidden>
     <p id="storage-warning" class="error" hidden>
-      This browser is blocking storage (private mode?), so progress will not be saved.
+      This browser is blocking local storage (private mode?). Your progress still
+      syncs online, but this device won't remember your nickname or keep an offline copy.
     </p>
   </div>
 </section>
@@ -65,7 +66,7 @@
 
     <p class="note">
       <button id="export-btn" class="link">Export progress</button> &middot;
-      <button id="delete-btn" class="link danger">Delete this profile</button>
+      <button id="delete-btn" class="link danger">Remove from this device</button>
     </p>
   </div>
 </section>

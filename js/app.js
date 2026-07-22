@@ -44,20 +44,46 @@
 
   /* ---------- profiles ---------- */
 
+  var loggingIn = false;
+
+  // Fetches a nickname's progress from the server (or this device's cache when
+  // offline) and, on success, shows the home screen. onError gets the failure.
+  function loginAs(name, onError) {
+    if (loggingIn) return;
+    loggingIn = true;
+    Store.login(name, function (err) {
+      loggingIn = false;
+      if (err) { if (onError) onError(err); else alert(err.message); return; }
+      // The question set has been replaced once already; clear out progress that
+      // refers to questions no longer present before showing any stats.
+      Store.prune(Object.keys(questionsById));
+      renderHome();
+    });
+  }
+
   function renderProfiles() {
     var list = byId('profile-list');
     clear(list);
+    byId('new-profile-name').value = '';
+    byId('profile-error').hidden = true;
 
     // Kept in sync with the data rather than hardcoded in the markup.
     byId('question-count').textContent = window.QUESTIONS.length;
 
-    Store.listProfiles().forEach(function (name) {
+    var recent = Store.listProfiles();
+    if (recent.length) {
+      var cap = document.createElement('p');
+      cap.className = 'label';
+      cap.textContent = 'Used on this device';
+      list.appendChild(cap);
+    }
+    recent.forEach(function (name) {
       var row = document.createElement('div');
       row.className = 'profile-row';
       var b = document.createElement('button');
       b.className = 'btn';
       b.textContent = name;
-      b.onclick = function () { Store.setCurrent(name); renderHome(); };
+      b.onclick = function () { loginAs(name); };
       row.appendChild(b);
       list.appendChild(row);
     });
@@ -68,18 +94,12 @@
 
   byId('new-profile').onsubmit = function (e) {
     e.preventDefault();
-    var input = byId('new-profile-name');
     var err = byId('profile-error');
-    try {
-      var name = Store.createProfile(input.value);
-      input.value = '';
-      err.hidden = true;
-      Store.setCurrent(name);
-      renderHome();
-    } catch (ex) {
+    err.hidden = true;
+    loginAs(byId('new-profile-name').value, function (ex) {
       err.textContent = ex.message;
       err.hidden = false;
-    }
+    });
   };
 
   byId('import-btn').onclick = function () { byId('import-file').click(); };
@@ -91,9 +111,9 @@
     reader.onload = function () {
       var err = byId('profile-error');
       try {
-        var name = Store.importJSON(reader.result);
+        Store.importJSON(reader.result);
         err.hidden = true;
-        Store.setCurrent(name);
+        Store.prune(Object.keys(questionsById));
         renderHome();
       } catch (ex) {
         err.textContent = 'Import failed: ' + ex.message;
@@ -159,7 +179,7 @@
     box.appendChild(ul);
   }
 
-  byId('switch-profile').onclick = renderProfiles;
+  byId('switch-profile').onclick = function () { Store.logout(); renderProfiles(); };
 
   byId('export-btn').onclick = function () {
     var blob = new Blob([Store.exportJSON()], { type: 'application/json' });
@@ -172,8 +192,10 @@
 
   byId('delete-btn').onclick = function () {
     var name = Store.currentName();
-    if (!confirm('Delete "' + name + '" and all its progress? This cannot be undone.')) return;
-    Store.deleteProfile(name);
+    if (!confirm('Remove "' + name + '" from this device?\n\n' +
+      'Its progress stays saved under this nickname — log in again on any ' +
+      'device to bring it back.')) return;
+    Store.forgetProfile(name);
     renderProfiles();
   };
 
@@ -534,12 +556,11 @@
   /* ---------- boot ---------- */
 
   var name = Store.currentName();
-  var known = Store.listProfiles().indexOf(name) !== -1;
-  if (name && known) {
-    // The question set has been replaced once already; clear out progress that
-    // refers to questions no longer present before showing any stats.
-    Store.prune(Object.keys(questionsById));
-    renderHome();
+  if (name) {
+    // Resume the last nickname: refresh it from the server (or this device's
+    // cached copy if offline), then show home. Falls back to the picker if the
+    // server can't be reached and there's nothing cached.
+    loginAs(name, function () { renderProfiles(); });
   } else {
     renderProfiles();
   }
