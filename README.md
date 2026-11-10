@@ -21,9 +21,10 @@ specifically so it works over `file://` too.
 - **Practice** — pick a session length (10, 20, 40, 100 or all 805) from
   shuffled questions, with instant feedback and the official explanation after
   each answer. Your last choice is remembered.
-- **Failed bank** — drills only the questions you have gotten wrong. A question
-  leaves the bank after **2 correct answers in a row**, so a lucky guess on a
-  multiple choice doesn't clear it.
+- **Failed bank** — drills only the questions you have gotten wrong. A wrong
+  answer in **any** mode (practice, drill or exam) puts a question in the bank.
+  Only a **correct answer while drilling the bank** takes it out; getting it
+  right in practice or an exam leaves it there.
 - **Mock exam** — 40 questions, 45 minutes, pass mark 35, mirroring the real
   test. No feedback until you finish, then you can review what you missed.
   A checkbox on the setup screen turns on **per-question feedback**: your answer

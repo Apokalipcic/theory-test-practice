@@ -17,8 +17,8 @@ window.Store = (function () {
   var CACHE = 'tt.cache.';      // tt.cache.<name> -> last known blob (offline copy)
   var PREFS = 'tt.prefs';       // how you like to study on THIS device
 
-  // A question leaves the failed bank after this many correct answers in a row,
-  // so a lucky guess on a 1-in-4 multiple choice doesn't clear it.
+  // "Mastered" stat only: this many correct answers in a row. It no longer
+  // decides failed-bank membership - the per-question `bank` flag does.
   var MASTERY = 2;
 
   /* ---------- localStorage plumbing (cache + prefs only) ---------- */
@@ -53,7 +53,8 @@ window.Store = (function () {
     return {
       name: name,
       created: Date.now(),
-      // qid -> { c: times correct, w: times wrong, streak: correct in a row }
+      // qid -> { c: times correct, w: times wrong, streak: correct in a row,
+      //         bank: true while the question is in the failed bank }
       answers: {},
       exams: []
     };
@@ -118,8 +119,19 @@ window.Store = (function () {
       });
   }
 
+  // Profiles saved before the `bank` flag existed derive membership from the old
+  // rule (ever wrong, and not yet MASTERY right in a row), so nobody's bank
+  // changes on upgrade. Records that already have the flag are left alone.
+  function migrate(blob) {
+    Object.keys(blob.answers || {}).forEach(function (id) {
+      var r = blob.answers[id];
+      if (typeof r.bank !== 'boolean') r.bank = r.w > 0 && (r.streak || 0) < MASTERY;
+    });
+    return blob;
+  }
+
   function begin(blob) {
-    current = blob;
+    current = migrate(blob);
     dirty = false;
     writeRaw(CURRENT, blob.name);
     writeRaw(cacheKey(blob.name), JSON.stringify(blob));
@@ -184,22 +196,26 @@ window.Store = (function () {
   /* ---------- the synchronous API app.js already uses ---------- */
 
   // Records one answer and returns the updated per-question record.
-  function recordAnswer(qid, correct) {
+  // Bank rules: a wrong answer in ANY mode (practice, drill, exam) puts the
+  // question in the failed bank; only a correct answer while drilling the bank
+  // (fromBank) takes it out. A correct answer in practice or an exam leaves the
+  // bank as it is.
+  function recordAnswer(qid, correct, fromBank) {
     if (!current) return null;
-    var rec = current.answers[qid] || { c: 0, w: 0, streak: 0 };
+    var rec = current.answers[qid] || { c: 0, w: 0, streak: 0, bank: false };
     if (correct) { rec.c++; rec.streak++; } else { rec.w++; rec.streak = 0; }
+    if (!correct) rec.bank = true;
+    else if (fromBank) rec.bank = false;
     current.answers[qid] = rec;
     touch();
     return rec;
   }
 
-  // The failed bank: anything answered wrong at least once that hasn't since
-  // been answered correctly MASTERY times in a row.
+  // The failed bank: every question whose `bank` flag is set (see recordAnswer).
   function failedIds() {
     if (!current) return [];
     return Object.keys(current.answers).filter(function (id) {
-      var r = current.answers[id];
-      return r.w > 0 && r.streak < MASTERY;
+      return current.answers[id].bank === true;
     });
   }
 

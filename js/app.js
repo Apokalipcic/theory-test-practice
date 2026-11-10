@@ -426,7 +426,8 @@
 
     // An exam scores and records every answer together in finishExam, so
     // recording here too would count each exam question twice.
-    if (!isExam) Store.recordAnswer(q.id, i === q.answer);
+    // Only a correct answer in the failed-bank drill clears a question from it.
+    if (!isExam) Store.recordAnswer(q.id, i === q.answer, session.mode === 'failed');
 
     byId('next').textContent = lastQuestion() ? 'Finish' : 'Next';
     byId('next').hidden = false;
